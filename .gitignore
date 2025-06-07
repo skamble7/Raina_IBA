@@ -1,0 +1,49 @@
+# Python-specific
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.python-version
+venv-iba-fastapi/
+env/
+.venv-iba-fastapi/
+*.egg-info
+
+# Package/Dependency Management
+requirements*.txt
+pip-log.txt
+poetry.lock
+.mypy_cache/
+.ruff_cache/
+
+# Build and Distribution
+build/
+dist/
+
+# Testing
+.pytest_cache/
+htmlcov/
+coverage*
+.coverage
+
+# IDE-specific files
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store
+
+# OS-specific files (if relevant)
+Thumbs.db
+
+# Logs and Temporary Files
+*.log
+tmp/
+temp/
+
+# Environment Variables
+.env
+
+# Other common exclusions (adjust as needed)
+data/  # If you have large data files that shouldn't be tracked
+notebooks/*.ipynb_checkpoints/ # Jupyter Notebook checkpoints
