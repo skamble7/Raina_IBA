@@ -20,18 +20,28 @@ def render_final_output(state: IBAState) -> IBAState:
 
     markdown = f"# Implementation Blueprint\n"
     markdown += f"_Generated on {datetime.utcnow().isoformat()}Z_\n\n"
-    markdown += f"## 🧭 Architecture Guide\n{guide}\n\n"
+    markdown += f"## Architecture Guide\n{guide}\n\n"
 
     if diagrams:
-        markdown += "## 🗺️ System-Level Diagrams\n"
-        for diagram_type, code in diagrams.items():
-            markdown += f"### {diagram_type.title()} Diagram\n"
-            markdown += "```plantuml\n" + code.strip() + "\n```\n\n"
+        markdown += "## System-Level Diagrams\n"
+        for diagram_type, diagram_list in diagrams.items():
+            markdown += f"### {diagram_type.title()} Diagrams\n"
+            for idx, diagram_obj in enumerate(diagram_list, 1):
+                code = (diagram_obj.code or "").strip()
+                image_url = diagram_obj.image_url or ""
+
+                markdown += f"#### {diagram_type.title()} Diagram {idx}\n"
+                if image_url:
+                    if not image_url.startswith("file://") and os.path.exists(image_url):
+                        image_url = f"file://{os.path.abspath(image_url)}"
+                    markdown += f"![{diagram_type} diagram {idx}]({image_url})\n\n"
+                else:
+                    markdown += "```plantuml\n" + code + "\n```\n\n"
     else:
-        markdown += "## 🗺️ System-Level Diagrams\n_No diagrams available._\n\n"
+        markdown += "## System-Level Diagrams\n_No diagrams available._\n\n"
 
     if adrs:
-        markdown += "## 🧾 Architectural Decision Records (ADRs)\n"
+        markdown += "## Architectural Decision Records (ADRs)\n"
         for i, adr in enumerate(adrs, 1):
             markdown += f"### ADR {i}: {adr['title']}\n"
             markdown += f"**Context:** {adr['context']}\n\n"
@@ -39,9 +49,8 @@ def render_final_output(state: IBAState) -> IBAState:
             markdown += f"**Alternatives:** {adr['alternatives']}\n\n"
             markdown += f"**Rationale:** {adr['rationale']}\n\n"
     else:
-        markdown += "## 🧾 Architectural Decision Records (ADRs)\n_None generated._\n"
+        markdown += "## Architectural Decision Records (ADRs)\n_None generated._\n"
 
-    # Save to output folder
     filename = f"{state.project_id}_implementation_blueprint"
     output_dir = os.path.join(os.getcwd(), "output")
     os.makedirs(output_dir, exist_ok=True)
@@ -52,11 +61,51 @@ def render_final_output(state: IBAState) -> IBAState:
 
     pdf_path = None
     try:
-        html_content = markdown2.markdown(markdown)
+        html_content = markdown2.markdown(markdown, extras=["fenced-code-blocks"])
+
+        styled_html = f"""
+        <html>
+        <head>
+        <style>
+            body {{
+                font-family: 'Segoe UI', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+                font-size: 12pt;
+                line-height: 1.6;
+                color: #1a1a1a;
+                padding: 2em;
+            }}
+            h1, h2, h3, h4 {{
+                font-weight: bold;
+                color: #0b0c0c;
+            }}
+            code, pre {{
+                font-family: 'Courier New', monospace;
+                background-color: #f4f4f4;
+                padding: 0.3em;
+                border-radius: 4px;
+            }}
+            ul, ol {{
+                margin-left: 1.2em;
+            }}
+        </style>
+        </head>
+        <body>
+        {html_content}
+        </body>
+        </html>
+        """
+
         pdf_path = os.path.join(output_dir, filename + ".pdf")
-        pdfkit.from_string(html_content, pdf_path)
+        pdfkit.from_string(
+            styled_html,
+            pdf_path,
+            options={
+                "enable-local-file-access": "",
+                "quiet": ""
+            }
+        )
     except Exception as e:
-            emit_iba_event(
+        emit_iba_event(
             project_id=state.project_id,
             node="render_output",
             event_type="iba.pdf.failed",
@@ -64,7 +113,6 @@ def render_final_output(state: IBAState) -> IBAState:
             metadata={"error": str(e)}
         )
 
-    # Update state only with valid paths
     state.blueprint_markdown = markdown
     exported = {"markdown": md_path}
     if pdf_path:

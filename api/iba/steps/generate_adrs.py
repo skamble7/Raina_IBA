@@ -4,7 +4,7 @@ from langchain.chat_models import ChatOpenAI
 from langchain.prompts import ChatPromptTemplate
 from langchain.output_parsers import PydanticOutputParser
 from pydantic import BaseModel
-from typing import List
+from typing import List, Dict
 from api.config import get_settings
 
 settings = get_settings()
@@ -45,13 +45,28 @@ Respond strictly in this format:
 {subset_artifacts}
 """)
 
-def chunk_artifacts(artifacts: dict, max_per_chunk: int = 3) -> List[dict]:
-    chunks = []
+def chunk_artifacts_globally(artifacts: Dict[str, List[Dict]], max_items: int = 8) -> List[Dict[str, List[Dict]]]:
+    flat_items = []
     for artifact_type, items in artifacts.items():
-        for i in range(0, len(items), max_per_chunk):
-            chunks.append({
-                artifact_type: items[i : i + max_per_chunk]
-            })
+        for item in items:
+            flat_items.append((artifact_type, item))
+
+    chunks = []
+    current_chunk: Dict[str, List[Dict]] = {}
+
+    for artifact_type, item in flat_items:
+        if artifact_type not in current_chunk:
+            current_chunk[artifact_type] = []
+        current_chunk[artifact_type].append(item)
+
+        total_items = sum(len(v) for v in current_chunk.values())
+        if total_items >= max_items:
+            chunks.append(current_chunk)
+            current_chunk = {}
+
+    if current_chunk:
+        chunks.append(current_chunk)
+
     return chunks
 
 async def generate_adrs(state: IBAState) -> IBAState:
@@ -65,11 +80,11 @@ async def generate_adrs(state: IBAState) -> IBAState:
 
     llm = ChatOpenAI(
         temperature=0.3,
-        model=settings.openai_model,
+        model="gpt-3.5-turbo",  # ✅ Use cost-effective model
         openai_api_key=settings.openai_api_key,
     )
 
-    chunks = chunk_artifacts(state.artifacts)
+    chunks = chunk_artifacts_globally(state.artifacts, max_items=8)
     all_adrs = []
 
     for i, chunk in enumerate(chunks):

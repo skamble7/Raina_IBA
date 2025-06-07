@@ -1,14 +1,17 @@
-from typing import Optional, Dict, List
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
+from typing import Dict, Optional, List
+
+class DiagramObject(BaseModel):
+    code: str
+    image_url: Optional[str] = None
 
 class IBAState(BaseModel):
     project_id: str
-    paradigm: Optional[str] = None  # ✅ Optional
-    artifacts: Optional[Dict[str, List[Dict]]] = None  # ✅ Optional
-
-    # Intermediates and outputs
     architecture_guide: Optional[str] = None
-    diagrams: Optional[Dict[str, str]] = None
-    adrs: Optional[List[Dict]] = None
-    blueprint_markdown: Optional[str] = None
+    adrs: Optional[List[dict]] = None
     exported_files: Optional[Dict[str, str]] = None
+    blueprint_markdown: Optional[str] = None
+    paradigm: Optional[str] = None
+    artifacts: Optional[dict] = None
+
+    diagrams: Optional[Dict[str, List[DiagramObject]]] = None

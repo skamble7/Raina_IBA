@@ -1,14 +1,22 @@
-import requests
-from api.iba.state import IBAState
+from pymongo import MongoClient
+from api.iba.state import IBAState, DiagramObject
 from api.config import get_settings
 from api.utils.emitter import emit_iba_event
+from api.utils.embed_system_diagrams import encode_plantuml
+from collections import defaultdict
 
 settings = get_settings()
 
+client = MongoClient(settings.mongodb_uri)
+db = client["Raina"]
+
 DIAGRAM_SUGGESTIONS = {
     "application": ["context", "sequence", "erd", "use_case"],
-    "data_pipeline": ["dag", "lineage", "partitioning_scheme", "checkpoint_flow"],
+    "data_pipeline": ["dag", "class", "target_data_model"],
 }
+
+def plantuml_image_url(code: str) -> str:
+    return f"{settings.PLANTUML_SERVER_URL}/svg/{encode_plantuml(code)}"
 
 def embed_system_diagrams(state: IBAState) -> IBAState:
     project_id = state.project_id
@@ -22,29 +30,31 @@ def embed_system_diagrams(state: IBAState) -> IBAState:
         metadata={"paradigm": paradigm}
     )
 
-    diagram_types = DIAGRAM_SUGGESTIONS.get(paradigm, [])
-    request_body = {
-        "project_id": project_id,
-        "diagram_types": diagram_types
-    }
-
     try:
-        response = requests.post(
-            f"{settings.VBA_API_URL}/vba/generate",
-            json=request_body,
-            timeout=60
-        )
-        response.raise_for_status()
-        diagrams = response.json().get("diagrams", [])
+        raw_diagrams = list(db["diagrams"].find({"project_id": project_id}))
+        if not raw_diagrams:
+            raise ValueError("No diagrams found for this project.")
 
-        state.diagrams = {d["diagram_type"]: d["code"] for d in diagrams}
+        allowed_types = DIAGRAM_SUGGESTIONS.get(paradigm, [])
+        filtered = [d for d in raw_diagrams if d.get("diagram_type") in allowed_types]
+
+        diagram_map = defaultdict(list)
+        for d in filtered:
+            diagram_map[d["diagram_type"]].append(
+                DiagramObject(
+                    code=d["code"],
+                    image_url=plantuml_image_url(d["code"])
+                )
+            )
+
+        state.diagrams = dict(diagram_map)
 
         emit_iba_event(
             project_id=project_id,
             node="embed_diagrams",
             event_type="iba.node.completed",
             status="completed",
-            metadata={"diagram_types": list(state.diagrams.keys())}
+            metadata={"count": sum(len(v) for v in state.diagrams.values())}
         )
     except Exception as e:
         emit_iba_event(

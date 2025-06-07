@@ -12,6 +12,7 @@ class Settings(BaseSettings):
     rabbitmq_exchange_type: str = "topic"
     rabbitmq_routing_key_iba_stream: str = "iba.artifact.generated"
     VBA_API_URL: str = "http://localhost:8011"
+    PLANTUML_SERVER_URL: str
 
     class Config:
         env_file = ".env"
