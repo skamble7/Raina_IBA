@@ -8,7 +8,6 @@ from typing import List, Dict
 
 settings = get_settings()
 
-# Generic prompt for non-entity artifacts
 GENERIC_CHUNK_PROMPT = ChatPromptTemplate.from_template(
     """
 You are a software architect.
@@ -58,11 +57,10 @@ def chunk_artifacts(artifacts: dict, max_per_chunk: int = 3) -> List[Dict]:
     chunks = []
     for artifact_type, items in artifacts.items():
         for i in range(0, len(items), max_per_chunk):
-            chunk = {
+            chunks.append({
                 "artifact_type": artifact_type,
                 "artifact_chunk": items[i : i + max_per_chunk]
-            }
-            chunks.append(chunk)
+            })
     return chunks
 
 async def generate_architecture_guide(state: IBAState) -> IBAState:
@@ -90,29 +88,25 @@ async def generate_architecture_guide(state: IBAState) -> IBAState:
         for i, chunk in enumerate(chunks):
             try:
                 artifact_type = chunk["artifact_type"]
-
                 if artifact_type == "entities":
                     entity_md_blocks = []
                     for entity in chunk["artifact_chunk"]:
                         name = entity.get("name", "Unknown")
                         description = entity.get("description", "")
                         attributes = entity.get("attributes", [])
-
                         attr_lines = [
                             f"- **{attr.get('name', '')}** (`{attr.get('type', '')}`): {attr.get('description', '')}"
                             for attr in attributes
                         ]
-                        entity_md = "".join([
+                        entity_md = "\n".join([
                             f"### Entity: {name}",
-                            f"_Description_: {description}",
-                            *attr_lines,
+                            f"_Description_: {description}_\n",
+                            "\n".join(attr_lines),
                             ""
                         ])
                         entity_md_blocks.append(entity_md)
-
-                    chunk_text = "".join(entity_md_blocks)
-                    chunk_guides.append("## Entity Definitions" + chunk_text)
-
+                    chunk_text = "\n".join(entity_md_blocks)
+                    chunk_guides.append("## Entity Definitions\n" + chunk_text)
                 else:
                     chunk_text = await generic_chain.ainvoke({
                         "paradigm": state.paradigm,
@@ -120,7 +114,6 @@ async def generate_architecture_guide(state: IBAState) -> IBAState:
                         "artifact_chunk": chunk["artifact_chunk"]
                     })
                     chunk_guides.append(chunk_text)
-
             except Exception as ce:
                 emit_iba_event(
                     project_id=state.project_id,
@@ -130,18 +123,17 @@ async def generate_architecture_guide(state: IBAState) -> IBAState:
                     metadata={"chunk_index": i, "error": str(ce)}
                 )
 
-        full_chunk_insights = "".join(chunk_guides)
+        full_chunk_insights = "\n\n".join(chunk_guides)
 
         final_guide = await final_chain.ainvoke({
             "paradigm": state.paradigm,
             "chunk_insights": full_chunk_insights
         })
 
-        # Hybrid approach: include final guide + full chunk insights as appendix
         state.architecture_guide = (
             final_guide.strip()
-            + "---"
-            + "## Detailed Artifact Definitions"
+            + "\n\n---\n\n"
+            + "## Detailed Artifact Definitions\n\n"
             + full_chunk_insights
         )
 
@@ -161,6 +153,6 @@ async def generate_architecture_guide(state: IBAState) -> IBAState:
             status="failed",
             metadata={"error": str(e)}
         )
-        state.architecture_guide = "# Architecture Guide _An error occurred during generation._"
+        state.architecture_guide = "# Architecture Guide\n\n_An error occurred during generation._"
 
     return state

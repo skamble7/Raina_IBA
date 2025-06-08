@@ -36,7 +36,7 @@ The system is built using the following tech stack:
    - Example job/DAG/task configuration if possible
 
 3. Focus especially on:
-   - Apache Spark usage for processing entities and DAG tasks
+   - Apache Spark/flink usage for processing entities and DAG tasks
    - Airflow DAG design around the discovered pipeline stages
    - MongoDB schema design using the extracted entities
    - Kafka messaging patterns that support the flows or DAGs
