@@ -33,7 +33,7 @@ PROJECTMAP_COLLECTIONS = {
     "transformation_rule_ids": ("transformation_rules", "rule_id"),
 }
 
-def load_project_artifacts(project_id: str) -> Tuple[str, Dict[str, List[Dict]]]:
+def load_project_artifacts(project_id: str) -> Tuple[str, Dict[str, List[Dict]], Dict]:
     logger.info(f"[IBA] Loading artifacts for project: {project_id}")
 
     project_map = db["project_map"].find_one({"project_id": project_id})
@@ -51,4 +51,4 @@ def load_project_artifacts(project_id: str) -> Tuple[str, Dict[str, List[Dict]]]
             artifacts[collection] = []
 
     paradigm = project_map.get("paradigm", "application")
-    return paradigm, artifacts
+    return paradigm, artifacts, project_map

@@ -1,4 +1,3 @@
-
 from api.iba.state import IBAState
 from api.utils.emitter import emit_iba_event
 from langchain.chat_models import ChatOpenAI
@@ -99,22 +98,20 @@ async def generate_architecture_guide(state: IBAState) -> IBAState:
                         description = entity.get("description", "")
                         attributes = entity.get("attributes", [])
 
-                        table_rows = [
-                            f"| {attr.get('name')} | {attr.get('type')} | {attr.get('description')} |"
+                        attr_lines = [
+                            f"- **{attr.get('name', '')}** (`{attr.get('type', '')}`): {attr.get('description', '')}"
                             for attr in attributes
                         ]
-                        table_md = "\n".join([
+                        entity_md = "".join([
                             f"### Entity: {name}",
-                            f"_Description_: {description}\n",
-                            "| Name | Type | Description |",
-                            "|------|------|-------------|",
-                            *table_rows,
+                            f"_Description_: {description}",
+                            *attr_lines,
                             ""
                         ])
-                        entity_md_blocks.append(table_md)
+                        entity_md_blocks.append(entity_md)
 
-                    chunk_text = "\n".join(entity_md_blocks)
-                    chunk_guides.append("## Entity Definitions\n" + chunk_text)
+                    chunk_text = "".join(entity_md_blocks)
+                    chunk_guides.append("## Entity Definitions" + chunk_text)
 
                 else:
                     chunk_text = await generic_chain.ainvoke({
@@ -133,7 +130,7 @@ async def generate_architecture_guide(state: IBAState) -> IBAState:
                     metadata={"chunk_index": i, "error": str(ce)}
                 )
 
-        full_chunk_insights = "\n\n".join(chunk_guides)
+        full_chunk_insights = "".join(chunk_guides)
 
         final_guide = await final_chain.ainvoke({
             "paradigm": state.paradigm,
@@ -143,8 +140,8 @@ async def generate_architecture_guide(state: IBAState) -> IBAState:
         # Hybrid approach: include final guide + full chunk insights as appendix
         state.architecture_guide = (
             final_guide.strip()
-            + "\n\n---\n\n"
-            + "## Detailed Detailed Artifact Definitions\n\n"
+            + "---"
+            + "## Detailed Artifact Definitions"
             + full_chunk_insights
         )
 
@@ -164,6 +161,6 @@ async def generate_architecture_guide(state: IBAState) -> IBAState:
             status="failed",
             metadata={"error": str(e)}
         )
-        state.architecture_guide = "# Architecture Guide\n\n_An error occurred during generation._"
+        state.architecture_guide = "# Architecture Guide _An error occurred during generation._"
 
     return state

@@ -22,6 +22,13 @@ def render_final_output(state: IBAState) -> IBAState:
     markdown += f"_Generated on {datetime.utcnow().isoformat()}Z_\n\n"
     markdown += f"## Architecture Guide\n{guide}\n\n"
 
+    # New: Tech Stack Guidance Section
+    if state.tech_stack_guidance:
+        markdown += "## Tech Stack Implementation Guide\n"
+        markdown += f"{state.tech_stack_guidance}\n\n"
+    else:
+        markdown += "## Tech Stack Implementation Guide\n_Not available._\n\n"
+
     if diagrams:
         markdown += "## System-Level Diagrams\n"
         for diagram_type, diagram_list in diagrams.items():
