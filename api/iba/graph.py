@@ -5,6 +5,7 @@ from api.iba.steps.generate_guide import generate_architecture_guide
 from api.iba.steps.embed_diagrams import embed_system_diagrams
 from api.iba.steps.generate_adrs import generate_adrs
 from api.iba.steps.generate_tech_stack import generate_tech_stack_guidance
+from api.iba.steps.generate_system_diagram import generate_system_diagram  # 🆕 Add this
 from api.iba.steps.render_output import render_final_output
 
 def build_iba_graph() -> StateGraph:
@@ -16,19 +17,21 @@ def build_iba_graph() -> StateGraph:
     builder.add_node("generate_diagrams", embed_system_diagrams)
     builder.add_node("generate_adrs", generate_adrs)
     builder.add_node("generate_tech_stack_guidance", generate_tech_stack_guidance)
+    builder.add_node("generate_system_diagram", generate_system_diagram)  # 🆕 Add node
     builder.add_node("render_output", render_final_output)
 
-    # Set new entry point
+    # Entry
     builder.set_entry_point("load_artifacts")
 
-    # Define transitions
+    # Transitions
     builder.add_edge("load_artifacts", "generate_guide")
     builder.add_edge("generate_guide", "generate_diagrams")
     builder.add_edge("generate_diagrams", "generate_adrs")
     builder.add_edge("generate_adrs", "generate_tech_stack_guidance")
-    builder.add_edge("generate_tech_stack_guidance", "render_output")
+    builder.add_edge("generate_tech_stack_guidance", "generate_system_diagram")  # 🆕 New edge
+    builder.add_edge("generate_system_diagram", "render_output")  # 🆕 New edge
 
-    # Define exit
+    # Exit
     builder.set_finish_point("render_output")
 
     return builder.compile()

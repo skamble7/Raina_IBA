@@ -22,13 +22,29 @@ def render_final_output(state: IBAState) -> IBAState:
     markdown += f"_Generated on {datetime.utcnow().isoformat()}Z_\n\n"
     markdown += f"## Architecture Guide\n{guide}\n\n"
 
-    # New: Tech Stack Guidance Section
+    # 🆕 Tech Stack Guidance Section
     if state.tech_stack_guidance:
         markdown += "## Tech Stack Implementation Guide\n"
         markdown += f"{state.tech_stack_guidance}\n\n"
     else:
         markdown += "## Tech Stack Implementation Guide\n_Not available._\n\n"
 
+    # 🆕 Final System Diagram Section
+    if state.system_diagram:
+        markdown += "## Final System Diagram\n"
+        if state.system_diagram.image_url:
+            image_url = state.system_diagram.image_url
+            if not image_url.startswith("file://") and os.path.exists(image_url):
+                image_url = f"file://{os.path.abspath(image_url)}"
+            markdown += f"![System Diagram]({image_url})\n\n"
+        else:
+            markdown += "```plantuml\n"
+            markdown += state.system_diagram.code.strip()
+            markdown += "\n```\n\n"
+    else:
+        markdown += "## Final System Diagram\n_Not available._\n\n"
+
+    # 🔁 System-Level Diagrams Section
     if diagrams:
         markdown += "## System-Level Diagrams\n"
         for diagram_type, diagram_list in diagrams.items():
@@ -47,6 +63,7 @@ def render_final_output(state: IBAState) -> IBAState:
     else:
         markdown += "## System-Level Diagrams\n_No diagrams available._\n\n"
 
+    # 🔁 Architectural Decision Records Section
     if adrs:
         markdown += "## Architectural Decision Records (ADRs)\n"
         for i, adr in enumerate(adrs, 1):
@@ -58,6 +75,7 @@ def render_final_output(state: IBAState) -> IBAState:
     else:
         markdown += "## Architectural Decision Records (ADRs)\n_None generated._\n"
 
+    # 📁 Output to file
     filename = f"{state.project_id}_implementation_blueprint"
     output_dir = os.path.join(os.getcwd(), "output")
     os.makedirs(output_dir, exist_ok=True)

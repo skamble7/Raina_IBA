@@ -30,3 +30,4 @@ class IBAState(BaseModel):
     # 🆕 Added fields
     selected_tech_stack: Optional[SelectedTechStack] = None
     tech_stack_guidance: Optional[str] = None
+    system_diagram: Optional[DiagramObject] = None
