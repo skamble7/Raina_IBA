@@ -12,7 +12,7 @@ db = client["Raina"]
 
 DIAGRAM_SUGGESTIONS = {
     "application": ["context", "sequence", "erd", "use_case"],
-    "data_pipeline": ["dag", "class", "target_data_model"],
+    "data_pipeline": ["dag", "target_data_model"],
 }
 
 def plantuml_image_url(code: str) -> str:
