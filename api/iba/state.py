@@ -31,3 +31,6 @@ class IBAState(BaseModel):
     selected_tech_stack: Optional[SelectedTechStack] = None
     tech_stack_guidance: Optional[str] = None
     system_diagram: Optional[DiagramObject] = None
+    story_summary: Optional[str] = None
+    flow_summary: Optional[str] = None
+    entity_summary: Optional[str] = None

@@ -10,7 +10,6 @@ env/
 *.egg-info
 
 # Package/Dependency Management
-requirements*.txt
 pip-log.txt
 poetry.lock
 .mypy_cache/
@@ -42,7 +41,6 @@ tmp/
 temp/
 
 # Environment Variables
-.env
 
 # Other common exclusions (adjust as needed)
 data/  # If you have large data files that shouldn't be tracked

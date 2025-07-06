@@ -7,6 +7,7 @@ from api.iba.steps.generate_adrs import generate_adrs
 from api.iba.steps.generate_tech_stack import generate_tech_stack_guidance
 from api.iba.steps.generate_system_diagram import generate_system_diagram  # 🆕 Add this
 from api.iba.steps.render_output import render_final_output
+from api.iba.steps.summarize_artifacts import summarize_artifacts
 
 def build_iba_graph() -> StateGraph:
     builder = StateGraph(IBAState)
@@ -19,12 +20,14 @@ def build_iba_graph() -> StateGraph:
     builder.add_node("generate_tech_stack_guidance", generate_tech_stack_guidance)
     builder.add_node("generate_system_diagram", generate_system_diagram)  # 🆕 Add node
     builder.add_node("render_output", render_final_output)
+    builder.add_node("summarize_artifacts", summarize_artifacts)
 
     # Entry
     builder.set_entry_point("load_artifacts")
 
     # Transitions
-    builder.add_edge("load_artifacts", "generate_guide")
+    builder.add_edge("load_artifacts", "summarize_artifacts")
+    builder.add_edge("summarize_artifacts", "generate_guide")
     builder.add_edge("generate_guide", "generate_diagrams")
     builder.add_edge("generate_diagrams", "generate_adrs")
     builder.add_edge("generate_adrs", "generate_tech_stack_guidance")

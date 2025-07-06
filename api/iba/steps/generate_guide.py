@@ -1,3 +1,4 @@
+
 from api.iba.state import IBAState
 from api.utils.emitter import emit_iba_event
 from langchain.chat_models import ChatOpenAI
@@ -34,18 +35,37 @@ FINAL_PROMPT = ChatPromptTemplate.from_template(
     """
 You are a senior software architect.
 
-Below is a list of artifact-specific architectural insights with detailed definitions (especially entities). Based on this, write a complete **Architecture Guide** for a "{paradigm}" project.
+The software paradigm is: **{paradigm}**
 
-Include:
+The selected tech stack is:
+```json
+{tech_stack}
+```
+
+Below are summaries of key project artifacts:
+### User Stories:
+{story_summary}
+
+### Entities:
+{entity_summary}
+
+### Flows:
+{flow_summary}
+
+Below that, you will find detailed artifact-level insights.
+
+---
+
+Using the information above, write a comprehensive **Architecture Guide** that includes:
+
 1. High-level architectural overview
-2. Key components and responsibilities
-3. Design patterns and principles based on the selected paradigm
-4. Scalability, reliability, maintainability
+2. Key components and responsibilities tailored to the paradigm
+3. Design patterns and principles based on the selected tech stack and domain
+4. Scalability, reliability, observability, maintainability
 5. Data or integration flow strategies
-6. A dedicated section summarizing key artifacts and referring to their detailed descriptions
+6. A brief section summarizing the artifacts with references to their details
 
-Respond in Markdown.
-
+Respond in **Markdown** with clear headings. Do not repeat generic patterns like microservices if not suitable for data pipelines.
 ---
 
 ## Detailed Artifact Insights
@@ -126,7 +146,11 @@ async def generate_architecture_guide(state: IBAState) -> IBAState:
         full_chunk_insights = "\n\n".join(chunk_guides)
 
         final_guide = await final_chain.ainvoke({
-            "paradigm": state.paradigm,
+            "paradigm": state.paradigm or "application",
+            "tech_stack": state.selected_tech_stack.model_dump_json(indent=2) if state.selected_tech_stack else "{}",
+            "story_summary": state.story_summary or "No user stories provided.",
+            "entity_summary": state.entity_summary or "No entities provided.",
+            "flow_summary": state.flow_summary or "No flows provided.",
             "chunk_insights": full_chunk_insights
         })
 
